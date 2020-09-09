@@ -12,6 +12,9 @@ use ggez::{Context, ContextBuilder, GameResult};
 mod body;
 use crate::body::Body;
 
+mod ui;
+use crate::ui::UiWrapper;
+
 #[derive(PartialEq)]
 enum GameMode {
     Drag, Add
@@ -27,11 +30,14 @@ struct Game {
 
     dt: f32, // Number of seconds that pass in a step
     paused: bool,
-    mode: GameMode
+    mode: GameMode,
+        
+    // ImGui-related fields
+    ui_wrapper: UiWrapper,
 }
 
 impl Game {
-    fn new(ctx: &mut Context) -> GameResult<Game> {
+    fn new(ctx: &mut Context, hidpi_factor: f32) -> GameResult<Game> {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
         let screen_coords = graphics::screen_coordinates(ctx);
         let s = Game {
@@ -42,7 +48,8 @@ impl Game {
             bodies: Vec::new(),
             dt: 8192.0,
             paused: false,
-            mode: GameMode::Drag
+            mode: GameMode::Drag,
+            ui_wrapper: UiWrapper::new(ctx, hidpi_factor)
         };
         Ok(s)
     }
@@ -151,13 +158,17 @@ impl event::EventHandler for Game {
         let dest = Point2::new(10.0, h - 30.0);
         graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
 
+        // Render UI
+        self.ui_wrapper.render(ctx);
+
         graphics::present(ctx)?;
 
         Ok(())
     }
 
     fn key_down_event(&mut self, ctx: &mut Context,
-                      key: KeyCode, _mods: KeyMods, _: bool) {
+                      key: KeyCode, mods: KeyMods, _: bool) {
+        self.ui_wrapper.update_key_down(key, mods);
         match key {
             KeyCode::Q => { event::quit(ctx); return; }
             KeyCode::P => self.paused = !self.paused,
@@ -171,8 +182,14 @@ impl event::EventHandler for Game {
         }
     }
 
+    fn key_up_event(&mut self, _ctx: &mut Context,
+                    keycode: KeyCode, keymods: KeyMods) {
+        self.ui_wrapper.update_key_up(keycode, keymods);
+    }
+
     fn mouse_button_down_event(&mut self, _ctx: &mut Context,
-                               _button: MouseButton, x: f32, y: f32) {
+                               button: MouseButton, x: f32, y: f32) {
+        self.ui_wrapper.update_mouse_down(button);
         if self.mode == GameMode::Add {
             self.add_body(
                 1.989e+30_f32,
@@ -182,12 +199,31 @@ impl event::EventHandler for Game {
         }
     }
 
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context,
+                             button: MouseButton, _x: f32, _y: f32) {
+        self.ui_wrapper.update_mouse_up(button);
+    }
+
     fn mouse_motion_event(&mut self, ctx: &mut Context,
-                          _x: f32, _y: f32, dx: f32, dy: f32) {
+                          x: f32, y: f32, dx: f32, dy: f32) {
+        self.ui_wrapper.update_mouse_pos(x, y);
         if self.mode == GameMode::Drag &&
             mouse::button_pressed(ctx, mouse::MouseButton::Left) {
             self.origin += Vector2::new(-dx * self.scale, -dy * self.scale);
         }
+    }
+
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
+        self.ui_wrapper.update_scroll(x, y);
+    }
+
+    fn text_input_event(&mut self, _ctx: &mut Context, val: char) {
+        self.ui_wrapper.update_text(val);
+    }
+
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+        graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
+            .unwrap();
     }
 }
 
@@ -219,6 +255,9 @@ fn main() -> GameResult {
     })?;
     graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, w, h))?;
 
-    let game = &mut Game::new(ctx)?;
+
+    let hidpi_factor = event_loop.get_primary_monitor().get_hidpi_factor() as f32;
+
+    let game = &mut Game::new(ctx, hidpi_factor)?;
     event::run(ctx, event_loop, game)
 }
