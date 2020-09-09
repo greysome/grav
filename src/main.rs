@@ -2,6 +2,7 @@ use std::env;
 use std::path;
 
 use ggez;
+use ggez::conf;
 use ggez::input::mouse;
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::event::{self, KeyCode, KeyMods, MouseButton};
@@ -201,6 +202,22 @@ fn main() -> GameResult {
 
     let cb = ContextBuilder::new("grav", "ggez").add_resource_path(resource_dir);
     let (ctx, event_loop) = &mut cb.build()?;
+
+    let w = 1000.0;
+    let h = 800.0;
+    graphics::set_mode(ctx, conf::WindowMode {
+        width: w,
+        height: h,
+        maximized: false,
+        fullscreen_type: conf::FullscreenType::Windowed,
+        borderless: false,
+        min_width: 0.0,
+        max_width: 0.0,
+        min_height: 0.0,
+        max_height: 0.0,
+        resizable: false
+    })?;
+    graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, w, h))?;
 
     let game = &mut Game::new(ctx)?;
     event::run(ctx, event_loop, game)
