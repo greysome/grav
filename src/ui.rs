@@ -11,6 +11,8 @@ use imgui;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
+use crate::state::GameState;
+
 #[derive(Default)]
 struct MouseState {
     pos: (i32, i32),
@@ -87,7 +89,7 @@ impl UiWrapper {
         }
     }
 
-    pub fn render(&mut self, ctx: &mut ggez::Context) {
+    pub fn render(&mut self, ctx: &mut ggez::Context, state: &GameState) {
         // Manually update ImGui state
         {
             self.update_mouse();

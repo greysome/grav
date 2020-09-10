@@ -6,7 +6,7 @@ use ggez::conf;
 use ggez::input::mouse;
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::event::{self, KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, Align, Text, Color, DrawMode, DrawParam, Font};
+use ggez::graphics::{self, Align, Text, Color, DrawMode, DrawParam};
 use ggez::{Context, ContextBuilder, GameResult};
 
 mod body;
@@ -15,32 +15,14 @@ use crate::body::Body;
 mod ui;
 use crate::ui::UiWrapper;
 
-#[derive(PartialEq)]
-enum GameMode {
-    Drag, Add
-}
+mod state;
+use crate::state::*;
 
-struct Game {
-    size: (f32, f32), // (width, height)
-    font: Font,
-
-    origin: Point2<f32>, // Position of center on global xy-plane
-    scale: f32, // 1 pixel corresponds to `scale` units on global xy-plane
-    bodies: Vec<Body>,
-
-    dt: f32, // Number of seconds that pass in a step
-    paused: bool,
-    mode: GameMode,
-        
-    // ImGui-related fields
-    ui_wrapper: UiWrapper,
-}
-
-impl Game {
-    fn new(ctx: &mut Context, hidpi_factor: f32) -> GameResult<Game> {
+impl GameState {
+    fn new(ctx: &mut Context) -> GameResult<GameState> {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
         let screen_coords = graphics::screen_coordinates(ctx);
-        let s = Game {
+        let state = GameState {
             size: (screen_coords.w, screen_coords.h),
             font: font,
             origin: Point2::new(0.0, 0.0),
@@ -49,9 +31,8 @@ impl Game {
             dt: 8192.0,
             paused: false,
             mode: GameMode::Drag,
-            ui_wrapper: UiWrapper::new(ctx, hidpi_factor)
         };
-        Ok(s)
+        Ok(state)
     }
 
     fn local_to_global_coords(&self, pos: &Point2<f32>) -> Point2<f32> {
@@ -118,10 +99,20 @@ impl Game {
     }
 }
 
-impl event::EventHandler for Game {
+impl GameInstance {
+    fn new(ctx: &mut Context, hidpi_factor: f32) -> GameResult<GameInstance> {
+        let instance = GameInstance {
+            ui_wrapper: UiWrapper::new(ctx, hidpi_factor),
+            state: GameState::new(ctx)?
+        };
+        Ok(instance)
+    }
+}
+
+impl event::EventHandler for GameInstance {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        if !self.paused {
-            self.update_bodies();
+        if !self.state.paused {
+            self.state.update_bodies();
         }
 
         Ok(())
@@ -130,36 +121,36 @@ impl event::EventHandler for Game {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
 
-        self.draw_bodies(ctx)?;
+        self.state.draw_bodies(ctx)?;
 
         // Paused text
-        if self.paused {
-            let text = Text::new(("Paused", self.font, 24.0));
+        if self.state.paused {
+            let text = Text::new(("Paused", self.state.font, 24.0));
             let dest = Point2::new(10.0, 10.0);
             graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
         }
         
         // Speed/scale text
-        let text = format!("Speed: {}x\nScale: {}x", self.dt, self.scale);
-        let mut text = Text::new((text, self.font, 24.0));
-        let (w, _) = self.size;
+        let text = format!("Speed: {}x\nScale: {}x", self.state.dt, self.state.scale);
+        let mut text = Text::new((text, self.state.font, 24.0));
+        let (w, _) = self.state.size;
         text.set_bounds(Point2::new(w - 10.0, 50.0), Align::Right);
         let dest = Point2::new(0.0, 10.0);
         graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
 
         // Mode text
-        let text = match self.mode {
+        let text = match self.state.mode {
             GameMode::Drag => "Drag",
             GameMode::Add => "Add"
         };
-        let mut text = Text::new((text, self.font, 24.0));
-        let (_, h) = self.size;
+        let mut text = Text::new((text, self.state.font, 24.0));
+        let (_, h) = self.state.size;
         text.set_bounds(Point2::new(w, 20.0), Align::Left);
         let dest = Point2::new(10.0, h - 30.0);
         graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
 
         // Render UI
-        self.ui_wrapper.render(ctx);
+        self.ui_wrapper.render(ctx, &self.state);
 
         graphics::present(ctx)?;
 
@@ -171,13 +162,13 @@ impl event::EventHandler for Game {
         self.ui_wrapper.update_key_down(key, mods);
         match key {
             KeyCode::Q => { event::quit(ctx); return; }
-            KeyCode::P => self.paused = !self.paused,
-            KeyCode::Left => self.dt /= 2.0,
-            KeyCode::Right => self.dt *= 2.0,
-            KeyCode::Up => self.scale /= 2.0,
-            KeyCode::Down => self.scale *= 2.0,
-            KeyCode::A => self.mode = GameMode::Add,
-            KeyCode::D => self.mode = GameMode::Drag,
+            KeyCode::P => self.state.paused = !self.state.paused,
+            KeyCode::Left => self.state.dt /= 2.0,
+            KeyCode::Right => self.state.dt *= 2.0,
+            KeyCode::Up => self.state.scale /= 2.0,
+            KeyCode::Down => self.state.scale *= 2.0,
+            KeyCode::A => self.state.mode = GameMode::Add,
+            KeyCode::D => self.state.mode = GameMode::Drag,
             _ => ()
         }
     }
@@ -190,10 +181,10 @@ impl event::EventHandler for Game {
     fn mouse_button_down_event(&mut self, _ctx: &mut Context,
                                button: MouseButton, x: f32, y: f32) {
         self.ui_wrapper.update_mouse_down(button);
-        if self.mode == GameMode::Add {
-            self.add_body(
+        if self.state.mode == GameMode::Add {
+            self.state.add_body(
                 1.989e+30_f32,
-                self.local_to_global_coords(&Point2::new(x, y)),
+                self.state.local_to_global_coords(&Point2::new(x, y)),
                 Vector2::new(0.0, 0.0)
             );
         }
@@ -207,9 +198,10 @@ impl event::EventHandler for Game {
     fn mouse_motion_event(&mut self, ctx: &mut Context,
                           x: f32, y: f32, dx: f32, dy: f32) {
         self.ui_wrapper.update_mouse_pos(x, y);
-        if self.mode == GameMode::Drag &&
+        if self.state.mode == GameMode::Drag &&
             mouse::button_pressed(ctx, mouse::MouseButton::Left) {
-            self.origin += Vector2::new(-dx * self.scale, -dy * self.scale);
+                self.state.origin += Vector2::new(-dx * self.state.scale,
+                                                  -dy * self.state.scale);
         }
     }
 
@@ -258,6 +250,6 @@ fn main() -> GameResult {
 
     let hidpi_factor = event_loop.get_primary_monitor().get_hidpi_factor() as f32;
 
-    let game = &mut Game::new(ctx, hidpi_factor)?;
+    let game = &mut GameInstance::new(ctx, hidpi_factor)?;
     event::run(ctx, event_loop, game)
 }
