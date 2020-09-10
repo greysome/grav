@@ -11,7 +11,7 @@ use imgui;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
-use crate::state::GameState;
+use crate::state::*;
 
 #[derive(Default)]
 struct MouseState {
@@ -110,6 +110,32 @@ impl UiWrapper {
         // The UI building
         let ui = self.imgui.frame();
         {
+            // Menus in main menu bar are disabled as they only serve to
+            // display information
+            let token = ui.push_style_color(StyleColor::TextDisabled, [1.0, 1.0, 1.0, 1.0]);
+            ui.main_menu_bar(|| {
+                if state.paused {
+                    ui.menu(im_str!("PAUSED"), false, || {});
+                }
+
+                match state.mode {
+                    GameMode::Add => ui.menu(im_str!("Add"), false, || {}),
+                    GameMode::Drag => ui.menu(im_str!("Drag"), false, || {})
+                };
+
+                let scale_text = format!("Scale: {}x\0", state.scale);
+                let s = unsafe {
+                    ImStr::from_utf8_with_nul_unchecked(scale_text.as_bytes())
+                };
+                ui.menu(&s, false, || {});
+
+                let dt_text = format!("Speed: {}x\0", state.dt);
+                let s = unsafe {
+                    ImStr::from_utf8_with_nul_unchecked(dt_text.as_bytes())
+                };
+                ui.menu(&s, false, || {});
+            });
+            token.pop(&ui);
         }
 
         // Rendering

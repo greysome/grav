@@ -1,12 +1,9 @@
-use std::env;
-use std::path;
-
 use ggez;
 use ggez::conf;
 use ggez::input::mouse;
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::event::{self, KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, Align, Text, Color, DrawMode, DrawParam};
+use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::{Context, ContextBuilder, GameResult};
 
 mod body;
@@ -20,11 +17,9 @@ use crate::state::*;
 
 impl GameState {
     fn new(ctx: &mut Context) -> GameResult<GameState> {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
         let screen_coords = graphics::screen_coordinates(ctx);
         let state = GameState {
             size: (screen_coords.w, screen_coords.h),
-            font: font,
             origin: Point2::new(0.0, 0.0),
             scale: 1e+9_f32,
             bodies: Vec::new(),
@@ -120,40 +115,9 @@ impl event::EventHandler for GameInstance {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
-
         self.state.draw_bodies(ctx)?;
-
-        // Paused text
-        if self.state.paused {
-            let text = Text::new(("Paused", self.state.font, 24.0));
-            let dest = Point2::new(10.0, 10.0);
-            graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
-        }
-        
-        // Speed/scale text
-        let text = format!("Speed: {}x\nScale: {}x", self.state.dt, self.state.scale);
-        let mut text = Text::new((text, self.state.font, 24.0));
-        let (w, _) = self.state.size;
-        text.set_bounds(Point2::new(w - 10.0, 50.0), Align::Right);
-        let dest = Point2::new(0.0, 10.0);
-        graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
-
-        // Mode text
-        let text = match self.state.mode {
-            GameMode::Drag => "Drag",
-            GameMode::Add => "Add"
-        };
-        let mut text = Text::new((text, self.state.font, 24.0));
-        let (_, h) = self.state.size;
-        text.set_bounds(Point2::new(w, 20.0), Align::Left);
-        let dest = Point2::new(10.0, h - 30.0);
-        graphics::draw(ctx, &text, DrawParam::default().dest(dest))?;
-
-        // Render UI
         self.ui_wrapper.render(ctx, &self.state);
-
         graphics::present(ctx)?;
-
         Ok(())
     }
 
@@ -220,15 +184,7 @@ impl event::EventHandler for GameInstance {
 }
 
 fn main() -> GameResult {
-    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        path
-    } else {
-        path::PathBuf::from("./resources")
-    };
-
-    let cb = ContextBuilder::new("grav", "ggez").add_resource_path(resource_dir);
+    let cb = ContextBuilder::new("grav", "ggez");
     let (ctx, event_loop) = &mut cb.build()?;
 
     let w = 1000.0;
@@ -246,7 +202,6 @@ fn main() -> GameResult {
         resizable: false
     })?;
     graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, w, h))?;
-
 
     let hidpi_factor = event_loop.get_primary_monitor().get_hidpi_factor() as f32;
 

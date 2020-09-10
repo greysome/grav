@@ -1,5 +1,4 @@
 use ggez::nalgebra::Point2;
-use ggez::graphics::Font;
 
 use crate::body::Body;
 use crate::ui::UiWrapper;
@@ -11,7 +10,6 @@ pub enum GameMode {
 
 pub struct GameState {
     pub size: (f32, f32), // (width, height)
-    pub font: Font,
 
     pub origin: Point2<f32>, // Position of center on global xy-plane
     pub scale: f32, // 1 pixel corresponds to `scale` units on global xy-plane
