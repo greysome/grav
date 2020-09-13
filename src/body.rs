@@ -6,7 +6,8 @@ pub struct Body {
     pub mass: f32,
     pub pos: Point2<f32>,
     pub v: Vector2<f32>,
-    pub a: Vector2<f32>
+    pub a: Vector2<f32>,
+    pub color: [f32; 4]
 }
 
 impl Body {

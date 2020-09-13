@@ -47,18 +47,21 @@ impl GameState {
     fn add_body(&mut self, mass: f32, pos: Point2<f32>, v: Vector2<f32>) {
         self.bodies.push(Body {
             mass, pos, v,
-            a: Vector2::new(0.0, 0.0)
+            a: Vector2::new(0.0, 0.0),
+            color: [1.0, 1.0, 1.0, 1.0]
         });
     }
 
-    fn draw_body(&self, ctx: &mut Context, pos: &Point2<f32>) -> GameResult<()> {
+    fn draw_body(&self, ctx: &mut Context,
+                 pos: &Point2<f32>, color: &[f32; 4]) -> GameResult<()> {
+        let (r, g, b, a) = (color[0], color[1], color[2], color[3]);
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
             Point2::new(0.0, 0.0),
             7.0,
             0.1,
-            graphics::WHITE
+            Color::new(r, g, b, a)
         )?;
 
         let dest = self.global_to_local_coords(&pos);
@@ -69,7 +72,7 @@ impl GameState {
 
     fn draw_bodies(&self, ctx: &mut Context) -> GameResult<()> {
         for b in &self.bodies[..] {
-            self.draw_body(ctx, &b.pos)?;
+            self.draw_body(ctx, &b.pos, &b.color)?;
         }
         Ok(())
     }
@@ -102,7 +105,8 @@ impl UiState {
             body_created: false,
             show_add_body: false,
             input_mass: 0.0,
-            input_v: [0.0, 0.0]
+            input_v: [0.0, 0.0],
+            input_color: [1.0, 1.0, 1.0, 1.0]
         }
     }
 }

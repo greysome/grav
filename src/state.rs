@@ -28,7 +28,8 @@ pub struct UiState {
     pub show_add_body: bool, // Is the user currently adding a new body?
     pub body_created: bool, // Has the new body already been created?
     pub input_mass: f32,
-    pub input_v: [f32; 2]
+    pub input_v: [f32; 2],
+    pub input_color: [f32; 4]
 }
 
 pub struct GameInstance {

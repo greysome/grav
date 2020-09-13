@@ -118,6 +118,14 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
             ui.input_float2(im_str!("Velocity"), &mut ui_state.input_v)
                 .build();
 
+            let cp = ColorPicker::new(im_str!("Color"), &mut ui_state.input_color)
+                .inputs(false)
+                .side_preview(false)
+                .small_preview(false);
+            if cp.build(ui) {
+                body.color.clone_from_slice(&ui_state.input_color);
+            }
+
             if ui.button(im_str!("Add"), [50.0, 20.0]) {
                 body.mass = ui_state.input_mass * 1.0e+22_f32;
                 let (vx, vy) = (ui_state.input_v[0] * 1000.0, ui_state.input_v[1] * 1000.0);
