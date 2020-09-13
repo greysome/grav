@@ -27,6 +27,7 @@ pub struct UiWrapper {
     pub imgui: imgui::Context,
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     hidpi_factor: f32,
+    fps: f32,
     last_frame: Instant,
     mouse_state: MouseState,
 }
@@ -57,7 +58,7 @@ fn reconfigure_keys(imgui: &mut imgui::Context) {
     io[Key::Z] = KeyCode::Z as _;
 }
 
-fn build_main_menu(ui: &Ui, state: &GameState) {
+fn build_main_menu(ui: &Ui, state: &GameState, fps: f32) {
     // Menus in main menu bar are disabled as they only serve to
     // display information
     let token = ui.push_style_color(StyleColor::TextDisabled, [1.0, 1.0, 1.0, 1.0]);
@@ -80,6 +81,12 @@ fn build_main_menu(ui: &Ui, state: &GameState) {
         let dt_text = format!("Speed: {}x\0", state.dt);
         let s = unsafe {
             ImStr::from_utf8_with_nul_unchecked(dt_text.as_bytes())
+        };
+        ui.menu(&s, false, || {});
+
+        let fps_text = format!("FPS: {:.0}\0", fps);
+        let s = unsafe {
+            ImStr::from_utf8_with_nul_unchecked(fps_text.as_bytes())
         };
         ui.menu(&s, false, || {});
     });
@@ -112,8 +119,6 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
                 .build();
 
             if ui.button(im_str!("Add"), [50.0, 20.0]) {
-                dbg!(body.mass, body.v.x, body.v.y);
-
                 body.mass = ui_state.input_mass * 1.0e+22_f32;
                 let (vx, vy) = (ui_state.input_v[0] * 1000.0, ui_state.input_v[1] * 1000.0);
                 body.v = Vector2::new(vx, vy);
@@ -163,6 +168,7 @@ impl UiWrapper {
             imgui,
             renderer,
             hidpi_factor,
+            fps: 0.0,
             last_frame: Instant::now(),
             mouse_state: MouseState::default()
         }
@@ -175,7 +181,7 @@ impl UiWrapper {
         self.create_new_frame(ctx);
 
         let ui = self.imgui.frame();
-        build_main_menu(&ui, game_state);
+        build_main_menu(&ui, game_state, self.fps);
         if ui_state.show_add_body {
             build_add_body_ui(&ui, game_state, ui_state);
         }
@@ -188,6 +194,7 @@ impl UiWrapper {
         let now = Instant::now();
         let delta = now - self.last_frame;
         let delta_s = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
+        self.fps = 1.0 / delta_s;
         self.last_frame = now;
 
         let (draw_width, draw_height) = graphics::drawable_size(ctx);
