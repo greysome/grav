@@ -150,8 +150,18 @@ impl event::EventHandler for GameInstance {
             KeyCode::Right => self.game_state.dt *= 2.0,
             KeyCode::Up => self.game_state.scale /= 2.0,
             KeyCode::Down => self.game_state.scale *= 2.0,
-            KeyCode::A => self.game_state.mode = GameMode::Add,
-            KeyCode::D => self.game_state.mode = GameMode::Drag,
+            KeyCode::A => {
+                if self.game_state.mode != GameMode::Add {
+                    self.game_state.paused = true;
+                }
+                self.game_state.mode = GameMode::Add;
+            }
+            KeyCode::D => {
+                if self.game_state.mode != GameMode::Drag {
+                    self.game_state.paused = false;
+                }
+                self.game_state.mode = GameMode::Drag;
+            }
             _ => ()
         }
     }
