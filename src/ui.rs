@@ -99,8 +99,8 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
 
     // Update position fields accordingly when scale is changed
     if ui_state.scale_change != 1.0 {
-        ui_state.input_pos = [ui_state.scale_change * ui_state.input_pos[0],
-                              ui_state.scale_change * ui_state.input_pos[1]];
+        ui_state.input_pos = [ui_state.input_pos[0] / ui_state.scale_change,
+                              ui_state.input_pos[1] / ui_state.scale_change];
         ui_state.scale_change = 1.0;
     }
 
