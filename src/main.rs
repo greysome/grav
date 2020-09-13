@@ -147,7 +147,11 @@ impl event::EventHandler for GameInstance {
         self.ui_wrapper.update_key_down(key, mods);
         match key {
             KeyCode::Q => { event::quit(ctx); return; }
-            KeyCode::P => self.game_state.paused = !self.game_state.paused,
+            KeyCode::P => {
+                if self.game_state.mode == GameMode::Drag {
+                    self.game_state.paused = !self.game_state.paused;
+                }
+            }
             KeyCode::Left => self.game_state.dt /= 2.0,
             KeyCode::Right => self.game_state.dt *= 2.0,
             KeyCode::Up => {
