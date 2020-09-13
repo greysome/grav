@@ -94,13 +94,27 @@ impl GameState {
     }
 }
 
+impl UiState {
+    fn new() -> UiState {
+        UiState {
+            mouse_pos: Point2::new(0.0, 0.0),
+            opened: true,
+            body_created: false,
+            show_add_body: false,
+            input_mass: 0.0,
+            input_v: [0.0, 0.0]
+        }
+    }
+}
+
 impl GameInstance {
     fn new(ctx: &mut Context, hidpi_factor: f32) -> GameResult<GameInstance> {
         let instance = GameInstance {
             game_state: GameState::new(ctx)?,
-            ui_state: UiState::default(),
+            ui_state: UiState::new(),
             ui_wrapper: UiWrapper::new(ctx, hidpi_factor)
         };
+
         Ok(instance)
     }
 }
@@ -117,7 +131,7 @@ impl event::EventHandler for GameInstance {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
         self.game_state.draw_bodies(ctx)?;
-        self.ui_wrapper.update_ui(ctx, &self.game_state, &mut self.ui_state);
+        self.ui_wrapper.update_ui(ctx, &mut self.game_state, &mut self.ui_state);
         graphics::present(ctx)?;
         Ok(())
     }
@@ -146,13 +160,10 @@ impl event::EventHandler for GameInstance {
     fn mouse_button_down_event(&mut self, _ctx: &mut Context,
                                button: MouseButton, x: f32, y: f32) {
         self.ui_wrapper.update_mouse_down(button);
-        if self.game_state.mode == GameMode::Add {
-            self.ui_state.add_body = true;
-            //self.game_state.add_body(
-            //    1.989e+30_f32,
-            //    self.game_state.local_to_global_coords(&Point2::new(x, y)),
-            //    Vector2::new(0.0, 0.0)
-            //);
+        if self.game_state.mode == GameMode::Add &&
+            !self.ui_state.show_add_body {
+            self.ui_state.show_add_body = true;
+            self.ui_state.mouse_pos = Point2::new(x, y);
         }
     }
 

@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use ggez;
+use ggez::nalgebra::Vector2;
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use ggez::graphics;
 
@@ -85,6 +86,44 @@ fn build_main_menu(ui: &Ui, state: &GameState) {
     token.pop(&ui);
 }
 
+fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState) {
+    if !ui_state.body_created {
+        game_state.add_body(
+            1.989e+30_f32, // Sun's mass
+            game_state.local_to_global_coords(&ui_state.mouse_pos),
+            Vector2::new(0.0, 0.0),
+        );
+        ui_state.body_created = true;
+    }
+
+    let body = game_state.bodies.last_mut().unwrap();
+
+    Window::new(im_str!("Add Body"))
+        .position([game_state.size.0 - 300.0, 20.0], Condition::Always)
+        .size([300.0, game_state.size.1], Condition::Always)
+        .movable(false)
+        .resizable(false)
+        .collapsible(false)
+        .build(ui, || {
+            ui.input_float(im_str!("Mass"), &mut ui_state.input_mass)
+                .chars_decimal(true)
+                .build();
+            ui.input_float2(im_str!("Velocity"), &mut ui_state.input_v)
+                .build();
+
+            if ui.button(im_str!("Add"), [50.0, 20.0]) {
+                dbg!(body.mass, body.v.x, body.v.y);
+
+                body.mass = ui_state.input_mass * 1.0e+22_f32;
+                let (vx, vy) = (ui_state.input_v[0] * 1000.0, ui_state.input_v[1] * 1000.0);
+                body.v = Vector2::new(vx, vy);
+
+                ui_state.show_add_body = false;
+                ui_state.body_created = false;
+            }
+        });
+}
+
 fn render_ui(ctx: &mut ggez::Context, ui: Ui,
              renderer: &mut Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>) {
     let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
@@ -130,16 +169,15 @@ impl UiWrapper {
     }
 
     pub fn update_ui(&mut self, ctx: &mut ggez::Context,
-                     game_state: &GameState, ui_state: &mut UiState) {
+                     game_state: &mut GameState, ui_state: &mut UiState) {
         // Manually update ImGui state
         self.update_mouse();
         self.create_new_frame(ctx);
 
         let ui = self.imgui.frame();
         build_main_menu(&ui, game_state);
-        if ui_state.add_body {
-            // TODO: build add body UI
-            ui_state.add_body = false;
+        if ui_state.show_add_body {
+            build_add_body_ui(&ui, game_state, ui_state);
         }
 
         render_ui(ctx, ui, &mut self.renderer);
