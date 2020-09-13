@@ -24,10 +24,12 @@ pub struct GameState {
 pub struct UiState {
     pub mouse_pos: Point2<f32>,
     pub opened: bool,
+    pub scale_change: f32, // To update position field in new body dialog
 
     pub show_add_body: bool, // Is the user currently adding a new body?
     pub body_created: bool, // Has the new body already been created?
     pub input_mass: f32,
+    pub input_pos: [f32; 2],
     pub input_v: [f32; 2],
     pub input_color: [f32; 4]
 }

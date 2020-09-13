@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use ggez;
-use ggez::nalgebra::Vector2;
+use ggez::nalgebra::{Point2, Vector2};
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use ggez::graphics;
 
@@ -94,15 +94,25 @@ fn build_main_menu(ui: &Ui, state: &GameState, fps: f32) {
 }
 
 fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState) {
+    let global_coords = game_state.local_to_global_coords(&ui_state.mouse_pos);
+    let scale = game_state.scale;
+
+    // Update position fields accordingly when scale is changed
+    if ui_state.scale_change != 1.0 {
+        ui_state.input_pos = [ui_state.scale_change * ui_state.input_pos[0],
+                              ui_state.scale_change * ui_state.input_pos[1]];
+        ui_state.scale_change = 1.0;
+    }
+
     if !ui_state.body_created {
         game_state.add_body(
             1.989e+30_f32, // Sun's mass
-            game_state.local_to_global_coords(&ui_state.mouse_pos),
+            global_coords,
             Vector2::new(0.0, 0.0),
         );
         ui_state.body_created = true;
+        ui_state.input_pos = [global_coords.x / scale, global_coords.y / scale];
     }
-
     let body = game_state.bodies.last_mut().unwrap();
 
     Window::new(im_str!("Add Body"))
@@ -117,6 +127,11 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
                 .build();
             ui.input_float2(im_str!("Velocity"), &mut ui_state.input_v)
                 .build();
+
+            let pos = ui.input_float2(im_str!("Pos"), &mut ui_state.input_pos);
+            if pos.build() {
+                body.pos = scale * Point2::new(ui_state.input_pos[0], ui_state.input_pos[1]);
+            }
 
             let cp = ColorPicker::new(im_str!("Color"), &mut ui_state.input_color)
                 .inputs(false)

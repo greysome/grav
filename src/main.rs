@@ -102,10 +102,12 @@ impl UiState {
         UiState {
             mouse_pos: Point2::new(0.0, 0.0),
             opened: true,
+            scale_change: 1.0,
             body_created: false,
             show_add_body: false,
             input_mass: 0.0,
             input_v: [0.0, 0.0],
+            input_pos: [0.0, 0.0],
             input_color: [1.0, 1.0, 1.0, 1.0]
         }
     }
@@ -148,8 +150,14 @@ impl event::EventHandler for GameInstance {
             KeyCode::P => self.game_state.paused = !self.game_state.paused,
             KeyCode::Left => self.game_state.dt /= 2.0,
             KeyCode::Right => self.game_state.dt *= 2.0,
-            KeyCode::Up => self.game_state.scale /= 2.0,
-            KeyCode::Down => self.game_state.scale *= 2.0,
+            KeyCode::Up => {
+                self.game_state.scale /= 2.0;
+                self.ui_state.scale_change = 0.5;
+            }
+            KeyCode::Down => {
+                self.game_state.scale *= 2.0;
+                self.ui_state.scale_change = 2.0;
+            }
             KeyCode::A => {
                 if self.game_state.mode != GameMode::Add {
                     self.game_state.paused = true;
@@ -174,8 +182,7 @@ impl event::EventHandler for GameInstance {
     fn mouse_button_down_event(&mut self, _ctx: &mut Context,
                                button: MouseButton, x: f32, y: f32) {
         self.ui_wrapper.update_mouse_down(button);
-        if self.game_state.mode == GameMode::Add &&
-            !self.ui_state.show_add_body {
+        if self.game_state.mode == GameMode::Add && !self.ui_state.show_add_body {
             self.ui_state.show_add_body = true;
             self.ui_state.mouse_pos = Point2::new(x, y);
         }
