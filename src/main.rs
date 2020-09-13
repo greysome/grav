@@ -23,7 +23,7 @@ impl GameState {
             origin: Point2::new(0.0, 0.0),
             scale: 1e+9_f32,
             bodies: Vec::new(),
-            dt: 8192.0,
+            dt: 10000.0,
             paused: false,
             mode: GameMode::Drag,
         };
@@ -152,15 +152,15 @@ impl event::EventHandler for GameInstance {
                     self.game_state.paused = !self.game_state.paused;
                 }
             }
-            KeyCode::Left => self.game_state.dt /= 2.0,
-            KeyCode::Right => self.game_state.dt *= 2.0,
+            KeyCode::Left => self.game_state.dt /= 10.0,
+            KeyCode::Right => self.game_state.dt *= 10.0,
             KeyCode::Up => {
-                self.game_state.scale /= 2.0;
-                self.ui_state.scale_change = 0.5;
+                self.game_state.scale /= 10.0;
+                self.ui_state.scale_change = 0.1;
             }
             KeyCode::Down => {
-                self.game_state.scale *= 2.0;
-                self.ui_state.scale_change = 2.0;
+                self.game_state.scale *= 10.0;
+                self.ui_state.scale_change = 10.0;
             }
             KeyCode::A => {
                 if self.game_state.mode != GameMode::Add {

@@ -72,13 +72,13 @@ fn build_main_menu(ui: &Ui, state: &GameState, fps: f32) {
             GameMode::Drag => ui.menu(im_str!("Drag"), false, || {})
         };
 
-        let scale_text = format!("Scale: {}x\0", state.scale);
+        let scale_text = format!("Scale: {:e}x\0", state.scale);
         let s = unsafe {
             ImStr::from_utf8_with_nul_unchecked(scale_text.as_bytes())
         };
         ui.menu(&s, false, || {});
 
-        let dt_text = format!("Speed: {}x\0", state.dt);
+        let dt_text = format!("Speed: {:e}x\0", state.dt);
         let s = unsafe {
             ImStr::from_utf8_with_nul_unchecked(dt_text.as_bytes())
         };
