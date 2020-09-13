@@ -116,7 +116,7 @@ impl event::EventHandler for GameInstance {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
         self.state.draw_bodies(ctx)?;
-        self.ui_wrapper.render(ctx, &self.state);
+        self.ui_wrapper.update_ui(ctx, &self.state);
         graphics::present(ctx)?;
         Ok(())
     }
