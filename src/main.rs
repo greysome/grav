@@ -18,7 +18,7 @@ use crate::state::*;
 impl GameState {
     fn new(ctx: &mut Context) -> GameResult<GameState> {
         let screen_coords = graphics::screen_coordinates(ctx);
-        let state = GameState {
+        let game_state = GameState {
             size: (screen_coords.w, screen_coords.h),
             origin: Point2::new(0.0, 0.0),
             scale: 1e+9_f32,
@@ -27,7 +27,7 @@ impl GameState {
             paused: false,
             mode: GameMode::Drag,
         };
-        Ok(state)
+        Ok(game_state)
     }
 
     fn local_to_global_coords(&self, pos: &Point2<f32>) -> Point2<f32> {
@@ -97,8 +97,9 @@ impl GameState {
 impl GameInstance {
     fn new(ctx: &mut Context, hidpi_factor: f32) -> GameResult<GameInstance> {
         let instance = GameInstance {
-            ui_wrapper: UiWrapper::new(ctx, hidpi_factor),
-            state: GameState::new(ctx)?
+            game_state: GameState::new(ctx)?,
+            ui_state: UiState::default(),
+            ui_wrapper: UiWrapper::new(ctx, hidpi_factor)
         };
         Ok(instance)
     }
@@ -106,8 +107,8 @@ impl GameInstance {
 
 impl event::EventHandler for GameInstance {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        if !self.state.paused {
-            self.state.update_bodies();
+        if !self.game_state.paused {
+            self.game_state.update_bodies();
         }
 
         Ok(())
@@ -115,8 +116,8 @@ impl event::EventHandler for GameInstance {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
-        self.state.draw_bodies(ctx)?;
-        self.ui_wrapper.update_ui(ctx, &self.state);
+        self.game_state.draw_bodies(ctx)?;
+        self.ui_wrapper.update_ui(ctx, &self.game_state, &mut self.ui_state);
         graphics::present(ctx)?;
         Ok(())
     }
@@ -126,13 +127,13 @@ impl event::EventHandler for GameInstance {
         self.ui_wrapper.update_key_down(key, mods);
         match key {
             KeyCode::Q => { event::quit(ctx); return; }
-            KeyCode::P => self.state.paused = !self.state.paused,
-            KeyCode::Left => self.state.dt /= 2.0,
-            KeyCode::Right => self.state.dt *= 2.0,
-            KeyCode::Up => self.state.scale /= 2.0,
-            KeyCode::Down => self.state.scale *= 2.0,
-            KeyCode::A => self.state.mode = GameMode::Add,
-            KeyCode::D => self.state.mode = GameMode::Drag,
+            KeyCode::P => self.game_state.paused = !self.game_state.paused,
+            KeyCode::Left => self.game_state.dt /= 2.0,
+            KeyCode::Right => self.game_state.dt *= 2.0,
+            KeyCode::Up => self.game_state.scale /= 2.0,
+            KeyCode::Down => self.game_state.scale *= 2.0,
+            KeyCode::A => self.game_state.mode = GameMode::Add,
+            KeyCode::D => self.game_state.mode = GameMode::Drag,
             _ => ()
         }
     }
@@ -145,12 +146,13 @@ impl event::EventHandler for GameInstance {
     fn mouse_button_down_event(&mut self, _ctx: &mut Context,
                                button: MouseButton, x: f32, y: f32) {
         self.ui_wrapper.update_mouse_down(button);
-        if self.state.mode == GameMode::Add {
-            self.state.add_body(
-                1.989e+30_f32,
-                self.state.local_to_global_coords(&Point2::new(x, y)),
-                Vector2::new(0.0, 0.0)
-            );
+        if self.game_state.mode == GameMode::Add {
+            self.ui_state.add_body = true;
+            //self.game_state.add_body(
+            //    1.989e+30_f32,
+            //    self.game_state.local_to_global_coords(&Point2::new(x, y)),
+            //    Vector2::new(0.0, 0.0)
+            //);
         }
     }
 
@@ -162,10 +164,10 @@ impl event::EventHandler for GameInstance {
     fn mouse_motion_event(&mut self, ctx: &mut Context,
                           x: f32, y: f32, dx: f32, dy: f32) {
         self.ui_wrapper.update_mouse_pos(x, y);
-        if self.state.mode == GameMode::Drag &&
+        if self.game_state.mode == GameMode::Drag &&
             mouse::button_pressed(ctx, mouse::MouseButton::Left) {
-                self.state.origin += Vector2::new(-dx * self.state.scale,
-                                                  -dy * self.state.scale);
+                self.game_state.origin += Vector2::new(-dx * self.game_state.scale,
+                                                       -dy * self.game_state.scale);
         }
     }
 

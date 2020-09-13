@@ -20,9 +20,16 @@ pub struct GameState {
     pub mode: GameMode,
 }
 
+#[derive(Default)]
+// Proxy through which ggez and ImGui communicate with each other
+pub struct UiState {
+    pub add_body: bool // Is the user currently adding a new body?
+}
+
 pub struct GameInstance {
-    // Data is organised this way so `state` and `ui_wrapper` can be
-    // borrowed at the same time
-    pub state: GameState,
+    // Data is organised this way so `state`, `ui_state` and
+    // `ui_wrapper` can be borrowed at the same time
+    pub game_state: GameState,
+    pub ui_state: UiState,
     pub ui_wrapper: UiWrapper
 }

@@ -129,13 +129,19 @@ impl UiWrapper {
         }
     }
 
-    pub fn update_ui(&mut self, ctx: &mut ggez::Context, state: &GameState) {
+    pub fn update_ui(&mut self, ctx: &mut ggez::Context,
+                     game_state: &GameState, ui_state: &mut UiState) {
         // Manually update ImGui state
         self.update_mouse();
         self.create_new_frame(ctx);
 
         let ui = self.imgui.frame();
-        build_main_menu(&ui, state);
+        build_main_menu(&ui, game_state);
+        if ui_state.add_body {
+            // TODO: build add body UI
+            ui_state.add_body = false;
+        }
+
         render_ui(ctx, ui, &mut self.renderer);
     }
 
