@@ -58,35 +58,48 @@ fn reconfigure_keys(imgui: &mut imgui::Context) {
     io[Key::Z] = KeyCode::Z as _;
 }
 
-fn build_main_menu(ui: &Ui, state: &GameState, fps: f32) {
-    // Menus in main menu bar are disabled as they only serve to
+fn build_main_menu(ui: &Ui, game_state: &mut GameState,
+                   ui_state: &mut UiState, fps: f32) {
+    // Some menus in main menu bar are disabled as they only serve to
     // display information
     let token = ui.push_style_color(StyleColor::TextDisabled, [1.0, 1.0, 1.0, 1.0]);
     ui.main_menu_bar(|| {
-        if state.paused {
+        if game_state.paused {
             ui.menu(im_str!("PAUSED"), false, || {});
         }
 
-        if state.reversed {
+        if game_state.reversed {
             ui.menu(im_str!("REVERSED"), false, || {});
         }
 
-        match state.mode {
+        match game_state.mode {
             GameMode::Add => ui.menu(im_str!("Add"), false, || {}),
             GameMode::Drag => ui.menu(im_str!("Drag"), false, || {})
         };
 
-        let scale_text = format!("Scale: {:e}x\0", state.scale);
+        let scale_text = format!("Scale: {:e}x\0", game_state.scale);
         let s = unsafe {
             ImStr::from_utf8_with_nul_unchecked(scale_text.as_bytes())
         };
-        ui.menu(&s, false, || {});
+        ui.menu(&s, true, || {
+            let input_scale = ui.input_float(im_str!(""), &mut ui_state.input_scale)
+                .enter_returns_true(true);
+            if input_scale.build() {
+                game_state.scale = ui_state.input_scale;
+            }
+        });
 
-        let dt_text = format!("Speed: {:e}x\0", state.dt);
+        let dt_text = format!("Speed: {:e}x\0", game_state.dt);
         let s = unsafe {
             ImStr::from_utf8_with_nul_unchecked(dt_text.as_bytes())
         };
-        ui.menu(&s, false, || {});
+        ui.menu(&s, true, || {
+            let input_dt = ui.input_float(im_str!(""), &mut ui_state.input_dt)
+                .enter_returns_true(true);
+            if input_dt.build() {
+                game_state.dt = ui_state.input_dt;
+            }
+        });
 
         let fps_text = format!("FPS: {:.0}\0", fps);
         let s = unsafe {
@@ -218,7 +231,7 @@ impl UiWrapper {
         self.create_new_frame(ctx);
 
         let ui = self.imgui.frame();
-        build_main_menu(&ui, game_state, self.fps);
+        build_main_menu(&ui, game_state, ui_state, self.fps);
         if ui_state.show_add_body {
             build_add_body_ui(&ui, game_state, ui_state);
         }

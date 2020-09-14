@@ -27,6 +27,11 @@ pub struct UiState {
     pub opened: bool,
     pub scale_change: f32, // To update position field in new body dialog
 
+    // Main menu
+    pub input_scale: f32,
+    pub input_dt: f32,
+
+    // Add body dialog
     pub show_add_body: bool, // Is the user currently adding a new body?
     pub body_created: bool, // Has the new body already been created?
     pub input_mass: f32,

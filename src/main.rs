@@ -112,6 +112,8 @@ impl UiState {
             mouse_pos: Point2::new(0.0, 0.0),
             opened: true,
             scale_change: 1.0,
+            input_scale: 1e+9_f32,
+            input_dt: 10000.0,
             body_created: false,
             show_add_body: false,
             input_mass: 0.0,
@@ -168,10 +170,12 @@ impl event::EventHandler for GameInstance {
             KeyCode::Right => self.game_state.dt *= 10.0,
             KeyCode::Up => {
                 self.game_state.scale /= 10.0;
+                self.ui_state.input_scale /= 10.0;
                 self.ui_state.scale_change = 0.1;
             }
             KeyCode::Down => {
                 self.game_state.scale *= 10.0;
+                self.ui_state.input_scale *= 10.0;
                 self.ui_state.scale_change = 10.0;
             }
             KeyCode::A => {
