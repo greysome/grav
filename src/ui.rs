@@ -95,7 +95,6 @@ fn build_main_menu(ui: &Ui, state: &GameState, fps: f32) {
 
 fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState) {
     let global_coords = game_state.local_to_global_coords(&ui_state.mouse_pos);
-    let scale = game_state.scale;
 
     // Update position fields accordingly when scale is changed
     if ui_state.scale_change != 1.0 {
@@ -111,9 +110,9 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
             Vector2::new(0.0, 0.0),
         );
         ui_state.body_created = true;
-        ui_state.input_pos = [global_coords.x / scale, global_coords.y / scale];
+        ui_state.input_pos = [global_coords.x / game_state.scale,
+                              global_coords.y / game_state.scale];
     }
-    let body = game_state.bodies.last_mut().unwrap();
 
     Window::new(im_str!("Add Body"))
         .position([game_state.size.0 - 300.0, 20.0], Condition::Always)
@@ -122,6 +121,8 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
         .resizable(false)
         .collapsible(false)
         .build(ui, || {
+            let body = game_state.bodies.last_mut().unwrap();
+
             ui.input_float(im_str!("Mass"), &mut ui_state.input_mass)
                 .chars_decimal(true)
                 .build();
@@ -130,7 +131,8 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
 
             let pos = ui.input_float2(im_str!("Pos"), &mut ui_state.input_pos);
             if pos.build() {
-                body.pos = scale * Point2::new(ui_state.input_pos[0], ui_state.input_pos[1]);
+                body.pos = game_state.scale *
+                    Point2::new(ui_state.input_pos[0], ui_state.input_pos[1]);
             }
 
             let cp = ColorPicker::new(im_str!("Color"), &mut ui_state.input_color)
@@ -145,6 +147,14 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
                 body.mass = ui_state.input_mass * 1.0e+22_f32;
                 let (vx, vy) = (ui_state.input_v[0] * 1000.0, ui_state.input_v[1] * 1000.0);
                 body.v = Vector2::new(vx, vy);
+
+                ui_state.show_add_body = false;
+                ui_state.body_created = false;
+            }
+
+            if ui.button(im_str!("Cancel"), [50.0, 20.0]) {
+                let new_len = game_state.bodies.len() - 1;
+                game_state.bodies.truncate(new_len);
 
                 ui_state.show_add_body = false;
                 ui_state.body_created = false;
