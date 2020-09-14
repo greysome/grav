@@ -11,12 +11,6 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn update(&mut self, dt: f32) {
-        self.pos += dt * self.v;
-        self.v += dt * self.a;
-        self.a = Vector2::new(0.0, 0.0);
-    }
-
     pub fn accel_towards(&self, other: &Body) -> Vector2<f32> {
         let dx = other.pos.x - self.pos.x;
         let dy = other.pos.y - self.pos.y;

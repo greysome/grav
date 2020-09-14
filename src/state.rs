@@ -17,6 +17,7 @@ pub struct GameState {
 
     pub dt: f32, // Number of seconds that pass in a step
     pub paused: bool,
+    pub reversed: bool,
     pub mode: GameMode,
 }
 

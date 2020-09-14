@@ -67,6 +67,10 @@ fn build_main_menu(ui: &Ui, state: &GameState, fps: f32) {
             ui.menu(im_str!("PAUSED"), false, || {});
         }
 
+        if state.reversed {
+            ui.menu(im_str!("REVERSED"), false, || {});
+        }
+
         match state.mode {
             GameMode::Add => ui.menu(im_str!("Add"), false, || {}),
             GameMode::Drag => ui.menu(im_str!("Drag"), false, || {})

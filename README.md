@@ -10,6 +10,7 @@
 - **left/right**: change speed
 - **up/down**: change scale
 - **p**: pause/unpause
+- **r**: reverse/unreverse
 
 ## TODO
 - Ability to modify size of bodies

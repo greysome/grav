@@ -25,6 +25,7 @@ impl GameState {
             bodies: Vec::new(),
             dt: 10000.0,
             paused: false,
+            reversed: false,
             mode: GameMode::Drag,
         };
         Ok(game_state)
@@ -92,7 +93,15 @@ impl GameState {
 
         // Update each body
         for b in &mut self.bodies[..] {
-            b.update(self.dt);
+            if self.reversed {
+                b.pos -= self.dt * b.v;
+                b.v -= self.dt * b.a;
+            }
+            else {
+                b.pos += self.dt * b.v;
+                b.v += self.dt * b.a;
+            }
+            b.a = Vector2::new(0.0, 0.0);
         }
     }
 }
@@ -151,6 +160,9 @@ impl event::EventHandler for GameInstance {
                 if self.game_state.mode == GameMode::Drag {
                     self.game_state.paused = !self.game_state.paused;
                 }
+            }
+            KeyCode::R => {
+                self.game_state.reversed = !self.game_state.reversed;
             }
             KeyCode::Left => self.game_state.dt /= 10.0,
             KeyCode::Right => self.game_state.dt *= 10.0,
