@@ -3,11 +3,6 @@ use ggez::nalgebra::Point2;
 use crate::body::Body;
 use crate::ui::UiWrapper;
 
-#[derive(PartialEq)]
-pub enum GameMode {
-    Drag, Add
-}
-
 pub struct GameState {
     pub size: (f32, f32), // (width, height)
 
@@ -18,7 +13,6 @@ pub struct GameState {
     pub dt: f32, // Number of seconds that pass in a step
     pub paused: bool,
     pub reversed: bool,
-    pub mode: GameMode,
 }
 
 // Proxy through which ggez and ImGui communicate with each other
@@ -31,7 +25,8 @@ pub struct UiState {
     pub input_scale: f32,
     pub input_dt: f32,
 
-    // Add body dialog
+    // Edit body dialog
+    pub selected_body_idx: Option<usize>,
     pub show_add_body: bool, // Is the user currently adding a new body?
     pub body_created: bool, // Has the new body already been created?
     pub input_mass: f32,

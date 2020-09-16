@@ -72,11 +72,6 @@ fn build_main_menu(ui: &Ui, game_state: &mut GameState,
             ui.menu(im_str!("REVERSED"), false, || {});
         }
 
-        match game_state.mode {
-            GameMode::Add => ui.menu(im_str!("Add"), false, || {}),
-            GameMode::Drag => ui.menu(im_str!("Drag"), false, || {})
-        };
-
         let scale_text = format!("Scale: {:e}x\0", game_state.scale);
         let s = unsafe {
             ImStr::from_utf8_with_nul_unchecked(scale_text.as_bytes())
@@ -110,45 +105,46 @@ fn build_main_menu(ui: &Ui, game_state: &mut GameState,
     token.pop(&ui);
 }
 
-fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState) {
-    let global_coords = game_state.local_to_global_coords(&ui_state.mouse_pos);
-
-    // Update position fields accordingly when scale is changed
-    if ui_state.scale_change != 1.0 {
-        ui_state.input_pos = [ui_state.input_pos[0] / ui_state.scale_change,
-                              ui_state.input_pos[1] / ui_state.scale_change];
-        ui_state.scale_change = 1.0;
-    }
-
-    if !ui_state.body_created {
-        game_state.add_body(
-            1.989e+30_f32, // Sun's mass
-            global_coords,
-            Vector2::new(0.0, 0.0),
-        );
-        ui_state.body_created = true;
-        ui_state.input_pos = [global_coords.x / game_state.scale,
-                              global_coords.y / game_state.scale];
-    }
-
-    Window::new(im_str!("Add Body"))
+fn build_body_ui(ui: &Ui, game_state: &mut GameState,
+                     ui_state: &mut UiState, body_idx: usize) {
+    Window::new(im_str!("Body View"))
         .position([game_state.size.0 - 300.0, 20.0], Condition::Always)
         .size([300.0, game_state.size.1], Condition::Always)
         .movable(false)
         .resizable(false)
         .collapsible(false)
         .build(ui, || {
-            let body = game_state.bodies.last_mut().unwrap();
+            let body = game_state.bodies[body_idx];
+            ui_state.input_mass = body.mass / 1e+22_f32;
+            ui_state.input_pos = [body.pos.x / game_state.scale,
+                                body.pos.y / game_state.scale];
+            ui_state.input_v = [body.v.x / 1000.0, body.v.y / 1000.0];
+            ui_state.input_color.clone_from_slice(&body.color);
 
-            ui.input_float(im_str!("Mass"), &mut ui_state.input_mass)
-                .chars_decimal(true)
-                .build();
-            ui.input_float2(im_str!("Velocity"), &mut ui_state.input_v)
-                .build();
+            // Update position fields accordingly when scale is changed
+            if ui_state.scale_change != 1.0 {
+                ui_state.input_pos = [ui_state.input_pos[0] / ui_state.scale_change,
+                                    ui_state.input_pos[1] / ui_state.scale_change];
+                ui_state.scale_change = 1.0;
+            }
 
-            let pos = ui.input_float2(im_str!("Pos"), &mut ui_state.input_pos);
+            let mass = ui.input_float(im_str!("Mass"), &mut ui_state.input_mass)
+                .enter_returns_true(true);
+            if mass.build() {
+                game_state.bodies[body_idx].mass = ui_state.input_mass * 1e+22_f32;
+            }
+
+            let v = ui.input_float2(im_str!("Velocity"), &mut ui_state.input_v)
+                .enter_returns_true(true);
+            if v.build() {
+                game_state.bodies[body_idx].v = 1000.0 *
+                    Vector2::new(ui_state.input_v[0], ui_state.input_v[1]);
+            }
+
+            let pos = ui.input_float2(im_str!("Pos"), &mut ui_state.input_pos)
+                .enter_returns_true(true);
             if pos.build() {
-                body.pos = game_state.scale *
+                game_state.bodies[body_idx].pos = game_state.scale *
                     Point2::new(ui_state.input_pos[0], ui_state.input_pos[1]);
             }
 
@@ -157,24 +153,16 @@ fn build_add_body_ui(ui: &Ui, game_state: &mut GameState, ui_state: &mut UiState
                 .side_preview(false)
                 .small_preview(false);
             if cp.build(ui) {
-                body.color.clone_from_slice(&ui_state.input_color);
+                game_state.bodies[body_idx].color.clone_from_slice(&ui_state.input_color);
             }
 
-            if ui.button(im_str!("Add"), [50.0, 20.0]) {
-                body.mass = ui_state.input_mass * 1.0e+22_f32;
-                let (vx, vy) = (ui_state.input_v[0] * 1000.0, ui_state.input_v[1] * 1000.0);
-                body.v = Vector2::new(vx, vy);
-
-                ui_state.show_add_body = false;
-                ui_state.body_created = false;
+            if ui.button(im_str!("Delete"), [50.0, 20.0]) {
+                game_state.bodies.remove(body_idx);
+                ui_state.selected_body_idx = None;
             }
 
-            if ui.button(im_str!("Cancel"), [50.0, 20.0]) {
-                let new_len = game_state.bodies.len() - 1;
-                game_state.bodies.truncate(new_len);
-
-                ui_state.show_add_body = false;
-                ui_state.body_created = false;
+            if ui.button(im_str!("Close"), [50.0, 20.0]) {
+                ui_state.selected_body_idx = None;
             }
         });
 }
@@ -232,8 +220,8 @@ impl UiWrapper {
 
         let ui = self.imgui.frame();
         build_main_menu(&ui, game_state, ui_state, self.fps);
-        if ui_state.show_add_body {
-            build_add_body_ui(&ui, game_state, ui_state);
+        if let Some(x) = ui_state.selected_body_idx {
+            build_body_ui(&ui, game_state, ui_state, x);
         }
 
         render_ui(ctx, ui, &mut self.renderer);

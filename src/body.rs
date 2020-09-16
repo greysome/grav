@@ -2,6 +2,7 @@ use ggez::nalgebra::{Point2, Vector2};
 
 // All points/vectors are in reference to global xy-plane
 // For convenience, 1 unit = 1 metre
+#[derive(Debug, Clone, Copy)]
 pub struct Body {
     pub mass: f32,
     pub pos: Point2<f32>,

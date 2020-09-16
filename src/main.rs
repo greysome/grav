@@ -1,6 +1,6 @@
 use ggez;
 use ggez::conf;
-use ggez::input::mouse;
+use ggez::input::{mouse, keyboard};
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::event::{self, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
@@ -25,8 +25,7 @@ impl GameState {
             bodies: Vec::new(),
             dt: 10000.0,
             paused: false,
-            reversed: false,
-            mode: GameMode::Drag,
+            reversed: false
         };
         Ok(game_state)
     }
@@ -114,6 +113,7 @@ impl UiState {
             scale_change: 1.0,
             input_scale: 1e+9_f32,
             input_dt: 10000.0,
+            selected_body_idx: None,
             body_created: false,
             show_add_body: false,
             input_mass: 0.0,
@@ -158,14 +158,8 @@ impl event::EventHandler for GameInstance {
         self.ui_wrapper.update_key_down(key, mods);
         match key {
             KeyCode::Q => { event::quit(ctx); return; }
-            KeyCode::P => {
-                if self.game_state.mode == GameMode::Drag {
-                    self.game_state.paused = !self.game_state.paused;
-                }
-            }
-            KeyCode::R => {
-                self.game_state.reversed = !self.game_state.reversed;
-            }
+            KeyCode::P => self.game_state.paused = !self.game_state.paused,
+            KeyCode::R => self.game_state.reversed = !self.game_state.reversed,
             KeyCode::Left => self.game_state.dt /= 10.0,
             KeyCode::Right => self.game_state.dt *= 10.0,
             KeyCode::Up => {
@@ -178,18 +172,6 @@ impl event::EventHandler for GameInstance {
                 self.ui_state.input_scale *= 10.0;
                 self.ui_state.scale_change = 10.0;
             }
-            KeyCode::A => {
-                if self.game_state.mode != GameMode::Add {
-                    self.game_state.paused = true;
-                }
-                self.game_state.mode = GameMode::Add;
-            }
-            KeyCode::D => {
-                if self.game_state.mode != GameMode::Drag {
-                    self.game_state.paused = false;
-                }
-                self.game_state.mode = GameMode::Drag;
-            }
             _ => ()
         }
     }
@@ -199,12 +181,30 @@ impl event::EventHandler for GameInstance {
         self.ui_wrapper.update_key_up(keycode, keymods);
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context,
+    fn mouse_button_down_event(&mut self, ctx: &mut Context,
                                button: MouseButton, x: f32, y: f32) {
         self.ui_wrapper.update_mouse_down(button);
-        if self.game_state.mode == GameMode::Add && !self.ui_state.show_add_body {
-            self.ui_state.show_add_body = true;
-            self.ui_state.mouse_pos = Point2::new(x, y);
+        self.ui_state.mouse_pos = Point2::new(x, y);
+
+        for (idx, b) in self.game_state.bodies.iter().enumerate() {
+            let local_coords = self.game_state.global_to_local_coords(&b.pos);
+            let (dx, dy) = (local_coords.x - x, local_coords.y - y);
+            let r_squared = dx.powi(2) + dy.powi(2);
+
+            if r_squared < 25.0 {
+                self.ui_state.selected_body_idx = Some(idx);
+            }
+        }
+
+        let keys = keyboard::pressed_keys(ctx);
+        if keys.contains(&KeyCode::LShift) || keys.contains(&KeyCode::RShift) {
+            let global_coords = self.game_state.local_to_global_coords(&Point2::new(x, y));
+            self.game_state.add_body(
+                1.989e+30_f32, // Sun's mass
+                global_coords,
+                Vector2::new(0.0, 0.0),
+            );
+            self.ui_state.selected_body_idx = Some(self.game_state.bodies.len()-1);
         }
     }
 
@@ -216,10 +216,11 @@ impl event::EventHandler for GameInstance {
     fn mouse_motion_event(&mut self, ctx: &mut Context,
                           x: f32, y: f32, dx: f32, dy: f32) {
         self.ui_wrapper.update_mouse_pos(x, y);
-        if self.game_state.mode == GameMode::Drag &&
-            mouse::button_pressed(ctx, mouse::MouseButton::Left) {
+        if mouse::button_pressed(ctx, mouse::MouseButton::Left) {
+            if let None = self.ui_state.selected_body_idx {
                 self.game_state.origin += Vector2::new(-dx * self.game_state.scale,
                                                        -dy * self.game_state.scale);
+            }
         }
     }
 
