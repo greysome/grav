@@ -12,7 +12,7 @@ pub struct GameState {
 
     pub dt: f32, // Number of seconds that pass in a step
     pub paused: bool,
-    pub reversed: bool,
+    pub reversed: bool
 }
 
 // Proxy through which ggez and ImGui communicate with each other
@@ -27,8 +27,6 @@ pub struct UiState {
 
     // Edit body dialog
     pub selected_body_idx: Option<usize>,
-    pub show_add_body: bool, // Is the user currently adding a new body?
-    pub body_created: bool, // Has the new body already been created?
     pub input_mass: f32,
     pub input_pos: [f32; 2],
     pub input_v: [f32; 2],

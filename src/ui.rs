@@ -108,8 +108,8 @@ fn build_main_menu(ui: &Ui, game_state: &mut GameState,
 fn build_body_ui(ui: &Ui, game_state: &mut GameState,
                      ui_state: &mut UiState, body_idx: usize) {
     Window::new(im_str!("Body View"))
-        .position([game_state.size.0 - 300.0, 20.0], Condition::Always)
-        .size([300.0, game_state.size.1], Condition::Always)
+        .position([game_state.size.0 - 400.0, 20.0], Condition::Always)
+        .size([400.0, game_state.size.1], Condition::Always)
         .movable(false)
         .resizable(false)
         .collapsible(false)
@@ -128,24 +128,24 @@ fn build_body_ui(ui: &Ui, game_state: &mut GameState,
                 ui_state.scale_change = 1.0;
             }
 
-            let mass = ui.input_float(im_str!("Mass"), &mut ui_state.input_mass)
+            let mass = ui.input_float(im_str!("Mass (10^22kg)"), &mut ui_state.input_mass)
                 .enter_returns_true(true);
             if mass.build() {
                 game_state.bodies[body_idx].mass = ui_state.input_mass * 1e+22_f32;
             }
 
-            let v = ui.input_float2(im_str!("Velocity"), &mut ui_state.input_v)
-                .enter_returns_true(true);
-            if v.build() {
-                game_state.bodies[body_idx].v = 1000.0 *
-                    Vector2::new(ui_state.input_v[0], ui_state.input_v[1]);
-            }
-
-            let pos = ui.input_float2(im_str!("Pos"), &mut ui_state.input_pos)
+            let pos = ui.input_float2(im_str!("Pos (to scale)"), &mut ui_state.input_pos)
                 .enter_returns_true(true);
             if pos.build() {
                 game_state.bodies[body_idx].pos = game_state.scale *
                     Point2::new(ui_state.input_pos[0], ui_state.input_pos[1]);
+            }
+
+            let v = ui.input_float2(im_str!("Velocity (km/s)"), &mut ui_state.input_v)
+                .enter_returns_true(true);
+            if v.build() {
+                game_state.bodies[body_idx].v = 1000.0 *
+                    Vector2::new(ui_state.input_v[0], ui_state.input_v[1]);
             }
 
             let cp = ColorPicker::new(im_str!("Color"), &mut ui_state.input_color)

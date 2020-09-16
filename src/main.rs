@@ -114,8 +114,6 @@ impl UiState {
             input_scale: 1e+9_f32,
             input_dt: 10000.0,
             selected_body_idx: None,
-            body_created: false,
-            show_add_body: false,
             input_mass: 0.0,
             input_v: [0.0, 0.0],
             input_pos: [0.0, 0.0],
