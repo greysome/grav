@@ -140,6 +140,24 @@ impl event::EventHandler for GameInstance {
             self.game_state.update_bodies();
         }
 
+        if self.game_state.dt <= 1.0 {
+            self.game_state.dt = 1.0;
+            self.ui_state.input_dt = 1.0;
+        }
+        else if self.game_state.dt >= 1e+10_f32 {
+            self.game_state.dt = 1e+10_f32;
+            self.ui_state.input_dt = 1e+10_f32;
+        }
+
+        if self.game_state.scale <= 1.0 {
+            self.game_state.scale = 1.0;
+            self.ui_state.input_scale = 1.0;
+        }
+        else if self.game_state.scale >= 1e+15_f32 {
+            self.game_state.scale = 1e+15_f32;
+            self.ui_state.input_scale = 1e+15_f32;
+        }
+
         Ok(())
     }
 
@@ -158,17 +176,17 @@ impl event::EventHandler for GameInstance {
             KeyCode::Q => { event::quit(ctx); return; }
             KeyCode::P => self.game_state.paused = !self.game_state.paused,
             KeyCode::R => self.game_state.reversed = !self.game_state.reversed,
-            KeyCode::Left => self.game_state.dt /= 10.0,
-            KeyCode::Right => self.game_state.dt *= 10.0,
+            KeyCode::Left => self.game_state.dt /= 2.0,
+            KeyCode::Right => self.game_state.dt *= 2.0,
             KeyCode::Up => {
-                self.game_state.scale /= 10.0;
-                self.ui_state.input_scale /= 10.0;
-                self.ui_state.scale_change = 0.1;
+                self.game_state.scale /= 2.0;
+                self.ui_state.input_scale /= 2.0;
+                self.ui_state.scale_change = 0.5;
             }
             KeyCode::Down => {
-                self.game_state.scale *= 10.0;
-                self.ui_state.input_scale *= 10.0;
-                self.ui_state.scale_change = 10.0;
+                self.game_state.scale *= 2.0;
+                self.ui_state.input_scale *= 2.0;
+                self.ui_state.scale_change = 2.0;
             }
             _ => ()
         }
